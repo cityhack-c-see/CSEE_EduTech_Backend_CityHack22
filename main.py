@@ -15,13 +15,14 @@ def createRoom():
     if not room_list[free_room]:
         room_id = free_room
         free_room += 1
+        return jsonify({'Error': 'False', 'Room ID': room_id})
     else:
-        for i in range(free_room % 100, (free_room + 100) % 100):
-            if not room_list[i]:
+        for i in range(free_room, (free_room + 100)):
+            if not room_list[i % 100]:
                 room_id = i
                 free_room = i + 1
-                break
-    return jsonify({'Room ID': room_id})
+                return jsonify({'Error': 'False', 'Room ID': room_id})
+        return jsonify({'Error': 'True', 'Msg': 'No Free Room'})
 
 
 @app.route('/')
