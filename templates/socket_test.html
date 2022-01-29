@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+	<script src="//code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.4.0/socket.io.js"></script>
+	<script type="text/javascript" charset="utf-8">
+		var websocket_url = 'http://127.0.0.1:5000/websocket';
+		var socket = io.connect( websocket_url );
+
+
+		socket.on('response',function(data){
+			if (data.code == '200'){
+				$('body').append( "<br/>" + data['msg'] );
+			}
+			else{
+				alert('ERROR:' + data.msg);
+			}
+		});
+
+		$( function() {
+				$("#submit").click( () => {
+					var data = $( '#data' ).val()
+					if ( data.length == 0 ) {
+						alert( 'No text' );
+					} else {
+						socket.emit( 'join', { "Room ID" : 1 } );
+					}
+
+				} )
+				$("#send").click( () => {
+					var data = $( '#data2' ).val()
+					if ( data.length == 0 ) {
+						alert( 'No text' );
+					} else {
+						socket.emit( 'socket_test', { "data" : data } );
+					}
+
+				} )
+			}
+		);
+	</script>
+	<body>
+
+		<h1>The button Element</h1>
+		<textarea id="data"></textarea>
+		<textarea id="data2"></textarea>
+		<button type="button" id="submit">Join</button>
+		<button type="button" id="send">send</button>
+	</body>
+</html>
