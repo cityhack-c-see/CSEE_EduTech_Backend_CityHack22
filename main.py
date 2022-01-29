@@ -7,6 +7,7 @@ app = Flask(__name__)
 socket = SocketIO(app)
 room_list = [False] * N
 free_room = 0
+room_host = {}
 
 
 @app.route("/api/room", methods=["POST"])
@@ -43,15 +44,28 @@ def index():
 
 
 @socket.on("join", namespace="/websocket")
-def createSocketRoom(json_data):
-    print(1)  # Debug only
-    json_data = request.json
-    print(request.json)  # Debug only
+def joinSocketRoom(json_data):
+    print(json_data)  # Debug only
     room_id = json_data['Room ID']
-    join_room(room_id + "A")
-    join_room(room_id + "B")
+    ishost = json_data["Host"]
+    if ishost == "True":
+        room_host[request.sid] = room_id
+    join_room(f"{room_id}A")
+    join_room(f"{room_id}B")
     print(rooms(request.sid))  # Debug only
     emit("server_response", {"Error": "False"})
+
+
+@socket.on("disconnect", namespace="/websocket")
+def leaveSocketRoom(json_data = {}):
+    if room_id := room_host.get(request.sid):
+        for room in rooms(request.sid):
+            leave_room(room)
+        emit("force_exit", {"Error": "False", "Msg": "Host exit"}, to=f"{room_id}A")
+    else:
+        for room in rooms(request.sid):
+            leave_room(room)
+    emit("server_response", {"Error": "False", "Msg": "Bye"})
 
 
 if __name__ == "__main__":
