@@ -14,31 +14,45 @@ free_room = 0
 
 @app.route("/api/room", methods=["POST"])
 def createRoom():
+    print("createRoom API")
     global free_room
+    print(free_room)
     if not room_list[free_room].isOccupied():
         room_list[free_room].setOccupied(True)
         room_id = free_room
         free_room += 1
+        free_room %= 100
+        print("Not Occupied")
         return jsonify({"Error": "False", "Room ID": room_id})
     else:
         for i in range(free_room, free_room + NUMBER_OF_ROOMS):
             if not room_list[i % NUMBER_OF_ROOMS].isOccupied():
                 room_list[free_room].setOccupied(True)
                 room_id = i
-                free_room = i + 1
+                free_room = (i + 1) % 100
+                print("Give Room ID")
                 return jsonify({"Error": "False", "Room ID": room_id})
+        print("No Free Room")
         return jsonify({"Error": "True", "Msg": "No Free Room"})
 
 
 @app.route("/api/room/<rid>", methods=["GET"])
 def joinRoom(rid: str):
+    print("JoinRoom")
     if not rid.isdigit():
+        print("No valid room id")
         return jsonify({"Error": "True", "Msg": "No Valid Room ID"})
+    if int(rid) > NUMBER_OF_ROOMS - 1 or int(rid) < 0:
+        print("Error: Room ID too big")
+        return jsonify({"Error": "True", "Msg": "Room ID is not valid"})
     if room_list[int(rid)].isOccupied():
+        print("False, next step websocket")
         return jsonify({"Error": "False"})  # Next step Websocket, discuss required
     elif room_list[int(rid)].getStudentCounter() == 100:
+        print("Room Full")
         return jsonify({"Error": "True", "Msg": "This room is full"})
     else:
+        print("Room ID is not init")
         return jsonify({"Error": "True", "Msg": "Room ID not initialize"})
 
 
@@ -54,41 +68,56 @@ def joinSocketRoom(json_data):
     if not room_id.isdigit():
         emit("server_response", {"Error": "True", "Msg": "Room ID not valid"})
     room_id = int(room_id)
-    ishost = json_data["Host"]
-    bigRoom: Room = room_list[room_id]
-    if ishost == "True":
-        bigRoom.hostJoin()
-        emit("server_response", {"Error": "False", "Msg": "Success"})
-    else:
-        if groupID := bigRoom.studentJoin():
-            emit("server_response", {"Error": "False", "Msg": groupID})
+    if NUMBER_OF_ROOMS - 1 >= room_id >= 0:
+        ishost = json_data["Host"]
+        bigRoom: Room = room_list[room_id]
+        if bigRoom.isOccupied():
+            if ishost == "True":
+                bigRoom.hostJoin()
+                emit("server_response", {"Error": "False", "Msg": "Success"})
+            else:
+                if groupID := bigRoom.studentJoin():
+                    emit("server_response", {"Error": "False", "Msg": groupID})
+                else:
+                    emit("server_response", {"Error": "True", "Msg": "Room Full"})
+            print(rooms(request.sid))  # Debug only
         else:
-            emit("server_response", {"Error": "True", "Msg": "Room Full"})
-    print(rooms(request.sid))  # Debug only
+            emit("server_response", {"Error": "True", "Msg": "Room is not available"})
+    else:
+        emit("server_response", {"Error": "True", "Msg": "Room ID is not valid"})
 
 
 @socket.on("disconnect", namespace="/websocket")
 def leaveSocketRoom(json_data={}):
+    print("Disconnect")
     if room_id := json_data.get("Room ID"):
-
+        print("Room ID")
         bigRoom = room_list[room_id]
         if groupID := json_data.get("Group ID"):
+            print("Stuent Leave")
             bigRoom.studentLeave(groupID)
         else:
+            print("Host Leave")
             bigRoom.hostLeave()
-
     else:
-        for i in rooms(request.sid):
-            if i != request.sid:
-                if i.isDigit():
-                    room_id = i
-                else:
-                    groupID = i
-        bigRoom = room_list[room_id]
-        if request.sid == bigRoom.getHost():
-            bigRoom.hostLeave()
-        else:
-            bigRoom.studentLeave(groupID)
+        print("False, client killed app")
+        print(request.sid)
+        print(rooms(request.sid))
+        if len(rooms(request.sid)) == 1:
+            for i in rooms(request.sid):
+                if i != request.sid:
+                    if type(i) == int:
+                        print("Is digit")
+                        room_id = i
+                    else:
+                        groupID = i
+            bigRoom = room_list[int(room_id)]
+            if request.sid == bigRoom.getHost():
+                print("Killed App host leave")
+                bigRoom.hostLeave()
+            else:
+                print("Killed App studentLeave")
+                bigRoom.studentLeave(groupID)
     emit("server_response", {"Error": "False", "Msg": "Bye"})
 
 

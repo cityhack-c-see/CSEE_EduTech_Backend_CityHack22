@@ -3,7 +3,7 @@ from flask_socketio import join_room, leave_room
 
 class SocketRoom:
     __socketRoomID: str
-    __socketRoomPeople: dict
+    __socketRoomPeople = {}
 
     def __init__(self, room_id) -> None:
         self.__socketRoomID = room_id

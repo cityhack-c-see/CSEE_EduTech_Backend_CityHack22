@@ -5,7 +5,7 @@ from flask_socketio import join_room, leave_room, rooms, emit
 
 
 class Room:
-    __roomID: str
+    __roomID: int
     __host = None
     __Occupied = False
     __studentCounter = 0
@@ -69,7 +69,7 @@ class Room:
     def hostLeave(self):
         for room in rooms(request.sid):
             leave_room(room)
-        emit("force_exit", {"Error": "False", "Msg": "Host exit"}, to=f"{self.__roomID}")
+        emit("force_exit", {"Error": "False", "Msg": "Host exit"}, to=self.__roomID)
 
     def studentLeave(self, groupID):
         for room in self.__socketRoomList:
