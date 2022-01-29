@@ -24,7 +24,7 @@ def createRoom():
         room_id = free_room
         free_room += 1
         free_room %= 100
-        thread = Thread(target=threaded_task, args=(room_id))
+        thread = Thread(target=threaded_task, args=(room_id,))
         thread.daemon = True
         thread.start()
         print("Not Occupied")
@@ -35,7 +35,7 @@ def createRoom():
                 room_list[free_room].setOccupied(True)
                 room_id = i
                 free_room = (i + 1) % 100
-                thread = Thread(target=threaded_task, args=(room_id))
+                thread = Thread(target=threaded_task, args=(room_id,))
                 thread.daemon = True
                 thread.start()
                 print("Give Room ID")
@@ -45,9 +45,9 @@ def createRoom():
 
 
 def threaded_task(room_id):
-    time.sleep(60)
+    time.sleep(10)
     if room_list[room_id].getHost() == None:
-        room_list[free_room].setOccupied(False)
+        room_list[room_id].setOccupied(False)
 
 
 @app.route("/api/room/<rid>", methods=["GET"])
