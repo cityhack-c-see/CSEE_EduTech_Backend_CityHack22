@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request, render_template
 from flask_socketio import SocketIO, join_room, leave_room, rooms, emit
 from room import Room
+from threading import Thread
+import time
 
 MAX_STUDENT_PER_ROOM = 100
 NUMBER_OF_ROOMS = 100
@@ -22,6 +24,9 @@ def createRoom():
         room_id = free_room
         free_room += 1
         free_room %= 100
+        thread = Thread(target=threaded_task)
+        thread.daemon = True
+        thread.start()
         print("Not Occupied")
         return jsonify({"Error": "False", "Room ID": room_id})
     else:
@@ -34,6 +39,12 @@ def createRoom():
                 return jsonify({"Error": "False", "Room ID": room_id})
         print("No Free Room")
         return jsonify({"Error": "True", "Msg": "No Free Room"})
+
+
+def threaded_task(room_id):
+    time.sleep(60)
+    if room_list[room_id].getHost() == None:
+        room_list[free_room].setOccupied(False)
 
 
 @app.route("/api/room/<rid>", methods=["GET"])

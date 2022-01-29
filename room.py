@@ -69,7 +69,10 @@ class Room:
     def hostLeave(self):
         for room in rooms(request.sid):
             leave_room(room)
-        emit("force_exit", {"Error": "False", "Msg": "Host exit"}, to=self.__roomID)
+            if self.getStudentCounter() == 0:
+                self.__init__(self.__roomID)
+            else:
+                emit("force_exit", {"Error": "False", "Msg": "Host exit"}, to=self.__roomID)
 
     def studentLeave(self, groupID):
         for room in self.__socketRoomList:
