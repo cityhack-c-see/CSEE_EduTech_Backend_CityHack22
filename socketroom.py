@@ -2,7 +2,7 @@ from flask import request
 from flask_socketio import join_room, leave_room
 
 class SocketRoom:
-    __socketRoomID: int
+    __socketRoomID: str
     __socketRoomPeople: dict
 
     def __init__(self, room_id) -> None:

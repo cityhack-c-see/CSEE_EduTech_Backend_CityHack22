@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request, render_template
 from flask_socketio import SocketIO, join_room, leave_room, rooms, emit
 from room import Room
 
+MAX_STUDENT_PER_ROOM = 100
 NUMBER_OF_ROOMS = 100
 MAX_STUDENT_PER_GROUP = 10
 
@@ -49,41 +50,45 @@ def index():
 @socket.on("join", namespace="/websocket")
 def joinSocketRoom(json_data):
     print(json_data)  # Debug only
-    room_id: str = json_data['Room ID']
-    if room_id.isdigit():
+    room_id = json_data['Room ID']
+    if not room_id.isdigit():
         emit("server_response", {"Error": "True", "Msg": "Room ID not valid"})
     room_id = int(room_id)
     ishost = json_data["Host"]
     room: Room = room_list[room_id]
     if ishost == "True":
-        room.setHost(request.sid)
+        room.hostJoin()
+        emit("server_response", {"Error": "False", "Msg": "Success"})
     else:
-        groupID = room_id + chr(room.getStudentCounter() // MAX_STUDENT_PER_GROUP + 65)
-        if room.getStudentCounter() % MAX_STUDENT_PER_GROUP == 0:
-            join_room(groupID, room.getHost())
-        join_room(groupID)
-        room.setStudentCounter(room.getStudentCounter() + 1)
-    join_room(f"{room_id}")
+        if groupID := room.studentJoin():
+            emit("server_response", {"Error": "False", "Msg": groupID})
+        else:
+            emit("server_response", {"Error": "True", "Msg": "Room Full"})
     print(rooms(request.sid))  # Debug only
-    emit("server_response", {"Error": "False"})
 
 
 @socket.on("disconnect", namespace="/websocket")
 def leaveSocketRoom(json_data={}):
     if room_id := json_data.get("Room ID"):
-        room_id = int(room_id)
-        room = room_list[room_id]
-        if room.getHost() == request.sid:
-            room.leave(request.sid)
 
-    if room_id := getRoomBySID(request.sid) >= 0:
-        for room in rooms(request.sid):
-            leave_room(room)
-        emit("force_exit", {"Error": "False", "Msg": "Host exit"},
-             to=f"{room_id}")  # Frontend remember to emit disconnect
+        room = room_list[room_id]
+        if groupID := json_data.get("Group ID"):
+            room.studentLeave(groupID)
+        else:
+            room.hostLeave()
+
     else:
-        for room in rooms(request.sid):
-            leave_room(room)
+        for i in rooms(request.sid):
+            if i != request.sid:
+                if i.isDigit():
+                    room_id = i
+                else:
+                    groupID = i
+        room = room_list[room_id]
+        if request.sid == room.getHost():
+            room.hostLeave()
+        else:
+            room.studentLeave(groupID)
     emit("server_response", {"Error": "False", "Msg": "Bye"})
 
 
