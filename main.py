@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from flask_socketio import SocketIO, join_room, leave_room, rooms
+from flask_socketio import SocketIO, join_room, leave_room, rooms, emit
 
 N = 100
 
@@ -44,14 +44,15 @@ def index():
 
 @socket.on("join", namespace="/websocket")
 def createSocketRoom(json_data):
+    print(1)
     json_data = request.json
     print(request.json)  # Debug only
     room_id = json_data['Room ID']
     join_room(room_id + "A")
     join_room(room_id + "B")
     print(rooms(request.sid))
-    return jsonify({"Error": "False"})
+    emit("Server response", {"Error": "False"})
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    socket.run(app, debug=True)
