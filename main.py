@@ -55,12 +55,12 @@ def joinSocketRoom(json_data):
         emit("server_response", {"Error": "True", "Msg": "Room ID not valid"})
     room_id = int(room_id)
     ishost = json_data["Host"]
-    room: Room = room_list[room_id]
+    bigRoom: Room = room_list[room_id]
     if ishost == "True":
-        room.hostJoin()
+        bigRoom.hostJoin()
         emit("server_response", {"Error": "False", "Msg": "Success"})
     else:
-        if groupID := room.studentJoin():
+        if groupID := bigRoom.studentJoin():
             emit("server_response", {"Error": "False", "Msg": groupID})
         else:
             emit("server_response", {"Error": "True", "Msg": "Room Full"})
@@ -71,11 +71,11 @@ def joinSocketRoom(json_data):
 def leaveSocketRoom(json_data={}):
     if room_id := json_data.get("Room ID"):
 
-        room = room_list[room_id]
+        bigRoom = room_list[room_id]
         if groupID := json_data.get("Group ID"):
-            room.studentLeave(groupID)
+            bigRoom.studentLeave(groupID)
         else:
-            room.hostLeave()
+            bigRoom.hostLeave()
 
     else:
         for i in rooms(request.sid):
@@ -84,11 +84,11 @@ def leaveSocketRoom(json_data={}):
                     room_id = i
                 else:
                     groupID = i
-        room = room_list[room_id]
-        if request.sid == room.getHost():
-            room.hostLeave()
+        bigRoom = room_list[room_id]
+        if request.sid == bigRoom.getHost():
+            bigRoom.hostLeave()
         else:
-            room.studentLeave(groupID)
+            bigRoom.studentLeave(groupID)
     emit("server_response", {"Error": "False", "Msg": "Bye"})
 
 

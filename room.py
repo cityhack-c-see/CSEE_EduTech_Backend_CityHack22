@@ -1,7 +1,7 @@
 from socketroom import SocketRoom
 from flask import request
 from flask_socketio import join_room, leave_room, rooms, emit
-from main import MAX_STUDENT_PER_ROOM
+
 
 
 class Room:
@@ -9,13 +9,14 @@ class Room:
     __host = None
     __Occupied = False
     __studentCounter = 0
-    __socketRoomList = [SocketRoom(f"{__roomID}A")]
+    __socketRoomList = None
 
     def __init__(self, roomID):
         self.__host = None
         self.__Occupied = False
         self.__studentCounter = 0
         self.__roomID = roomID
+        self.__socketRoomList = [SocketRoom(f"{self.__roomID}A")]
 
     def getRoomID(self):
         return self.__roomID
@@ -42,6 +43,7 @@ class Room:
         self.__studentCounter = studentCounter
 
     def studentJoin(self):
+        from main import MAX_STUDENT_PER_ROOM
         if self.__studentCounter < MAX_STUDENT_PER_ROOM:
             join_room(self.__roomID)
             for i in range(len(self.__socketRoomList)):
