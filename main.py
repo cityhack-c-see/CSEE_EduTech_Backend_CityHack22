@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, jsonify, request, render_template
 from flask_socketio import SocketIO, join_room, leave_room, rooms, emit
 from room import Room
@@ -46,7 +48,10 @@ def createRoom():
 
 def threaded_task(room_id):
     time.sleep(10)
+    print('Thread')
+    print(room_id)
     if room_list[room_id].getHost() == None:
+        print('set False')
         room_list[room_id].setOccupied(False)
 
 
@@ -84,9 +89,12 @@ def joinSocketRoom(json_data):
     room_id = int(room_id)
     if NUMBER_OF_ROOMS - 1 >= room_id >= 0:
         ishost = json_data["Host"]
+        print(json_data["Host"])
         bigRoom: Room = room_list[room_id]
         if bigRoom.isOccupied():
+
             if ishost == "True":
+
                 bigRoom.hostJoin()
                 emit("server_response", {"Error": "False", "Msg": "Success"})
             else:
@@ -117,7 +125,7 @@ def leaveSocketRoom(json_data={}):
         print("False, client killed app")
         print(request.sid)
         print(rooms(request.sid))
-        if len(rooms(request.sid)) == 1:
+        if len(rooms(request.sid)) != 1:
             for i in rooms(request.sid):
                 if i != request.sid:
                     if type(i) == int:
@@ -140,6 +148,25 @@ def getRoomBySID(sid):
         if room_list[i].getHost() == sid:
             return i
     return -1
+
+
+@socket.on('client_request', namespace="/websocket")
+def drawData(data):
+    print(data)
+    print(type(data))
+    try:
+        json_data = json.loads(data)
+    except:
+        json_data = data
+    room_id = json_data['Room ID']
+    if room_id.isdigit():
+        print( "Boardcast to room" )
+        print(rooms(request.sid))
+        print( room_id )
+        emit('server_response', data, room=int(room_id))
+    else:
+        print("Boardcast to subgroup")
+        emit('server_response', data, room=room_id)
 
 
 if __name__ == "__main__":
